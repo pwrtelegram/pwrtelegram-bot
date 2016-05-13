@@ -11,14 +11,14 @@
 # This file is public domain in the USA and all free countries.
 # Elsewhere, consider it to be WTFPLv2. (wtfpl.net/txt/copying)
 
-if [ ! -d "JSON.sh" ]; then
+if [ ! -d JSON.sh ]; then
 	echo "You did not clone recursively! Downloading JSON.sh..."
-	git clone http://github.com/dominictarr/JSON.sh/
+	git clone http://github.com/dominictarr/JSON.sh
 	echo "JSON.sh has been downloaded. Proceeding."
 fi
 
 source commands.sh source
-URL='https://api.telegram.org/bot'$TOKEN
+URL='https://beta.pwrtelegram.xyz/bot'$TOKEN
 
 
 SCRIPT="$0"
@@ -26,6 +26,7 @@ MSG_URL=$URL'/sendMessage'
 PHO_URL=$URL'/sendPhoto'
 AUDIO_URL=$URL'/sendAudio'
 DOCUMENT_URL=$URL'/sendDocument'
+FILE_DL_URL=$URL'/sendFile'
 STICKER_URL=$URL'/sendSticker'
 VIDEO_URL=$URL'/sendVideo'
 VOICE_URL=$URL'/sendVoice'
@@ -38,7 +39,7 @@ ME_URL=$URL'/getMe'
 ME=$(curl -s $ME_URL | ./JSON.sh/JSON.sh -s | egrep '\["result","username"\]' | cut -f 2 | cut -d '"' -f 2)
 
 
-FILE_URL='https://api.telegram.org/file/bot'$TOKEN'/'
+FILE_URL='https://storage.pwrtelegram.xyz/'
 UPD_URL=$URL'/getUpdates?offset='
 GET_URL=$URL'/getFile'
 OFFSET=0
@@ -190,7 +191,11 @@ send_keyboard() {
 }
 
 get_file() {
-	[ "$1" != "" ] && echo $FILE_URL$(curl -s "$GET_URL" -F "file_id=$1" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)
+	[ "$1" == "" ] && return
+	res=$(curl -s "$GET_URL" -F "file_id=$1"  -F "store_on_pwrtelegram=true")
+	send_message ${USER[ID]} $res
+	res=$(echo "$res" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)
+	[ "$res" != "" ] && echo $FILE_URL$res
 }
 
 send_file() {
@@ -233,7 +238,7 @@ send_file() {
 			;;
 	esac
 	send_action $chat_id $STATUS
-	res=$(curl -s "$CUR_URL" -F "chat_id=$chat_id" -F "$WHAT=@$file" -F "caption=$3")
+	res=$(curl -s "$FILE_DL_URL" -F "chat_id=$chat_id" -F "file=@$file" -F "caption=$3")
 }
 
 # typing for text messages, upload_photo for photos, record_video or upload_video for videos, record_audio or upload_audio for audio files, upload_document for general files, find_location for location
@@ -311,7 +316,7 @@ process_client() {
 	# Location
 	LOCATION[LONGITUDE]=$(echo "$res" | egrep '\["result",0,"message","location","longitude"\]' | cut -f 2 | cut -d '"' -f 2)
 	LOCATION[LATITUDE]=$(echo "$res" | egrep '\["result",0,"message","location","latitude"\]' | cut -f 2 | cut -d '"' -f 2)
-	NAME="$(basename ${URLS[*]} &>/dev/null)"
+	NAME=$(echo ${URLS[*]} | sed 's/.*\///g')
 
 	# Tmux
 	copname="$ME"_"${USER[ID]}"
@@ -327,13 +332,12 @@ process_client() {
 while [ "$1" == "startbot" ]; do {
 
 	res=$(curl -s $UPD_URL$OFFSET | ./JSON.sh/JSON.sh -s)
-
 	# Offset
 	OFFSET=$(echo "$res" | egrep '\["result",0,"update_id"\]' | cut -f 2)
 	OFFSET=$((OFFSET+1))
 
 	if [ $OFFSET != 1 ]; then
-		process_client&
+		process_client
 	fi
 
 }; done
