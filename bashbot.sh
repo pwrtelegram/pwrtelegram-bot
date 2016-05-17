@@ -193,7 +193,6 @@ send_keyboard() {
 get_file() {
 	[ "$1" == "" ] && return
 	res=$(curl -s "$GET_URL" -F "file_id=$1"  -F "store_on_pwrtelegram=true")
-	send_message ${USER[ID]} $res
 	res=$(echo "$res" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)
 	[ "$res" != "" ] && echo $FILE_URL$res
 }

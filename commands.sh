@@ -14,8 +14,8 @@ if [ "$1" = "source" ];then
 	FILE_REGEX='.*'
 else
 	if ! tmux ls | grep -v send | grep -q $copname; then
+			send_message "${USER[ID]}" "${URLS[*]}"
 		[ ! -z ${URLS[*]} ] && {
-send_message "${USER[ID]}" "${URLS[*]}"
 			curl -s ${URLS[*]} -o $NAME -L
 			send_file "${USER[ID]}" "$NAME" "$CAPTION"
 			rm "$NAME"
