@@ -17,7 +17,8 @@ else
 			send_message "${USER[ID]}" "${URLS[*]}"
 		[ ! -z ${URLS[*]} ] && {
 			curl -s ${URLS[*]} -o $NAME -L
-			send_file "${USER[ID]}" "$NAME" "$CAPTION"
+			send_file "${USER[ID]}" $(echo "$NAME" | sed 's/\s*//g' | tr -d '\n')
+			send_message "${USER[ID]}" "Sending URL ($(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')) result is $res"
 			rm "$NAME"
 		}
 		[ ! -z ${LOCATION[*]} ] && send_location "${USER[ID]}" "${LOCATION[LATITUDE]}" "${LOCATION[LONGITUDE]}"
@@ -56,16 +57,20 @@ else
 			send_message "${USER[ID]}" "This is bashbot, the Telegram bot written entirely in bash."
 			;;
 		'/start')
-			send_message "${USER[ID]}" "This is bashbot, the Telegram bot written entirely in bash.
-It features background tasks and interactive chats, and can serve as an interface for CLI programs.
-It currently can send, recieve and forward messages, custom keyboards, photos, audio, voice, documents, locations and video files.
+			send_message "${USER[ID]}" "This the official bot of the @pwrtelegram api.
+I am basically a testing platform for the @pwrtelegram API.
+
+I am connected to the beta PWRTelegram API (beta.pwrtelegram.xyz), so sometimes I might spit out some weird errors or not work at all. That means @danogentili is busy debugging the API :)
+
+Try sending me files or the following commands, if you encounter some bugs send @danogentili a screenshot!
+
 Available commands:
 • /start: Start bot and get this message.
 • /info: Get shorter info message about this bot.
 • /question: Start interactive chat.
 • /cancel: Cancel any currently running interactive chats.
 Written by Drew (@topkecleon) and Daniil Gentili (@danogentili).
-http://github.com/topkecleon/telegram-bot-bash
+http://github.com/pwrtelegram/pwrtelegram-bot
 "
 			;;
 		'/cancel')

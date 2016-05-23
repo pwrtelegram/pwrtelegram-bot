@@ -11,6 +11,7 @@
 # This file is public domain in the USA and all free countries.
 # Elsewhere, consider it to be WTFPLv2. (wtfpl.net/txt/copying)
 
+cd $(dirname $PWD/$0)
 if [ ! -d JSON.sh ]; then
 	echo "You did not clone recursively! Downloading JSON.sh..."
 	git clone http://github.com/dominictarr/JSON.sh
@@ -192,13 +193,14 @@ send_keyboard() {
 
 get_file() {
 	[ "$1" == "" ] && return
-	res=$(curl -s "$GET_URL" -F "file_id=$1"  -F "store_on_pwrtelegram=true")
-	res=$(echo "$res" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)
+	jsonres=$(curl -s "$GET_URL" -F "file_id=$1"  -F "store_on_pwrtelegram=true")
+	send_message "${USER[ID]}" "$jsonres"
+	res=$(echo "$jsonres" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)
 	[ "$res" != "" ] && echo $FILE_URL$res
 }
 
 send_file() {
-	[ "$2" = "" ] && return
+	[ "$2" = "" ] && res=empty && return
 	local chat_id=$1
 	local file=$2
 	echo "$file" | grep -qE $FILE_REGEX || return
@@ -336,7 +338,7 @@ while [ "$1" == "startbot" ]; do {
 	OFFSET=$((OFFSET+1))
 
 	if [ $OFFSET != 1 ]; then
-		process_client
+		process_client&
 	fi
 
 }; done
