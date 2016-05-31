@@ -174,7 +174,6 @@ answer_inline_query() {
 
 	esac
 	res=$(curl -s "$INLINE_QUERY" -F "inline_query_id=$1" -F "results=$InlineQueryResult")
-echo "$res">o
 }
 
 send_keyboard() {

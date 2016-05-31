@@ -39,35 +39,41 @@ else
 			# Inline examples
 			if [[ $iQUERY_MSG == photo ]]; then
 				answer_inline_query "$iQUERY_ID" "photo" "http://blog.techhysahil.com/wp-content/uploads/2016/01/Bash_Scripting.jpeg" "http://blog.techhysahil.com/wp-content/uploads/2016/01/Bash_Scripting.jpeg"
-return
+				return
 			fi
 
 			if [[ $iQUERY_MSG == gif ]]; then
 				answer_inline_query "$iQUERY_ID" "gif" "http://i.giphy.com/149t2dI5M5nzvq.gif" "http://blog.techhysahil.com/wp-content/uploads/2016/01/Bash_Scripting.jpeg" "http://blog.techhysahil.com/wp-content/uploads/2016/01/Bash_Scripting.jpeg"
-return
+				return
 			fi
 			if [[ $iQUERY_MSG == cgif ]]; then
 				answer_inline_query "$iQUERY_ID" "cached_gif" "BQADBAADpAADf3ErDHpXzEivjoV_Ag"
-return
+				return
 			fi
 			if [[ $iQUERY_MSG == cmgif ]]; then
 				answer_inline_query "$iQUERY_ID" "cached_mpeg4_gif" "BQADBAADpAADf3ErDHpXzEivjoV_Ag"
-return
+				return
 			fi
 
 			if [[ $iQUERY_MSG == zip ]]; then
 				answer_inline_query "$iQUERY_ID" "document" "1GB zip file" "1GB zip file" "https://storage.pwrtelegram.xyz/pwrtelegrambot/document/download_604040884794687598.zip"
 #"BQADBAADbgAD_PthCPK954yXfJEDAg"
-return
+				return
 			fi
-			if [[ $iQUERY_MSG == winx ]]; then
-#				answer_inline_query "$iQUERY_ID" "document" "yay" "yay" ""
+			if [[ $iQUERY_MSG == bot ]]; then
+				InlineQueryResult='[{"type":"document","id":"'$RANDOM'","title":"This bot","caption":"This bot","document_url":"","mime_type":""}]'
+				res=$(curl -s "$INLINE_QUERY" -F "inline_query_id=$iQUERY_ID" -F "results=$InlineQueryResult" -F "inline_file0=@bashbot.sh")
 #"BQADBAADbgAD_PthCPK954yXfJEDAg"
-return
+				return
+			fi
+			if [[ $iQUERY_MSG == 10 ]]; then
+				answer_inline_query "$iQUERY_ID" "document" "yay" "yay" "http://speedtest.ftp.otenet.gr/files/test10Mb.db"
+#"BQADBAADbgAD_PthCPK954yXfJEDAg"
+				return
 			fi
 			if [[ $iQUERY_MSG == web ]]; then
 				answer_inline_query "$iQUERY_ID" "article" "Telegram" "https://telegram.org/"
-return
+				return
 			fi
                         if [ ! -z "$iQUERY_ID" ]; then
                                 answer_inline_query "$iQUERY_ID" "article" "Info message" "This the official bot of the @pwrtelegram api.
@@ -118,9 +124,13 @@ http://github.com/pwrtelegram/pwrtelegram-bot
 		'/cancel')
 			if tmux ls | grep -q $copname; then killproc && send_message "${USER[ID]}" "Command canceled.";else send_message "${USER[ID]}" "No command is currently running.";fi
 			;;
+		'/dl')
+			send_message "${USER[ID]}" "Usage: /dl url filename";;
 		'/dl'*)
-			send_file "${USER[ID]}" $(echo "${MESSAGE}" | sed 's/^\/dl //g' | tr -d '\n')
-			oldres="$res"
+			res=$(curl -s "$FILE_DL_URL" -F "chat_id=${USER[ID]}" -F "file=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/\s.*//g')" -F "name=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/.*\s//')" )
+
+#			send_file "${USER[ID]}" $(echo "${MESSAGE}" | sed 's/^\/dl //g' | tr -d '\n')
+#			oldres="$res"
 			send_message "${USER[ID]}" "Result is $res, reforward the file to me to get the URL download link."
 
 			;;
