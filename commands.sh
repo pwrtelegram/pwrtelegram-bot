@@ -61,7 +61,7 @@ else
 				return
 			fi
 			if [[ $iQUERY_MSG == bot ]]; then
-				InlineQueryResult='[{"type":"document","id":"'$RANDOM'","title":"This bot","caption":"This bot","document_url":"","mime_type":""}]'
+				InlineQueryResult='[{"type":"file","id":"'$RANDOM'","title":"This bot","caption":"This bot","document_url":"","mime_type":""}]'
 				res=$(curl -s "$INLINE_QUERY" -F "inline_query_id=$iQUERY_ID" -F "results=$InlineQueryResult" -F "inline_file0=@bashbot.sh")
 #"BQADBAADbgAD_PthCPK954yXfJEDAg"
 				return
@@ -79,9 +79,27 @@ else
                                 answer_inline_query "$iQUERY_ID" "article" "Info message" "This the official bot of the @pwrtelegram api.
 I am basically a testing platform for the @pwrtelegram API.
 
+The @pwrtelegram bot API is an enhanced version of telegram's bot API that has all of the official telegram bot API features plus:  
+* Downloading of files up to 1.5 GB in size  
+* Anonymous file storage (the URL of downloaded files does not contain your bot's token)
+* Uploading of files up to 1.5 GB in size  
+* Uploading of files using an URL
+* Reuploading of files using a file ID and different file type or file name.
+* Uploading of any file/URL/file ID with automagical type recognition.  
+* Uploading of any file/URL/file ID without sending the file to a specific user.  
+* Automagical metadata recognition of sent files/URLs/file IDs.  
+* Deleting of text messages sent from the bot  
+* Uploading of files bigger than 5 megabytes with inline queries (supports both URLs and direct uploads)
+* Automatical type recognition for files sent using answerinlinequery 
+* Both webhooks and getupdates are supported.
+* webhook requests can be recieved even on insecure http servers.
+* It is open source(https://github.com/pwrtelegram)!
+* It can be installed on your own server(https://github.com/pwrtelegram/pwrtelegram-backend)!
+
+
 I am connected to the beta PWRTelegram API (beta.pwrtelegram.xyz), so sometimes I might spit out some weird errors or not work at all. That means @danogentili is busy debugging the API :)
 
-Try sending me files or the following commands, if you encounter some bugs send @danogentili a screenshot!
+Try sending me one of the following inline queries, if you encounter some bugs send @danogentili a screenshot!
 
 Available inline queries:
 zip - Send 1gb zip file
@@ -107,18 +125,37 @@ http://github.com/pwrtelegram/pwrtelegram-bot"
 			send_message "${USER[ID]}" "This the official bot of the @pwrtelegram api.
 I am basically a testing platform for the @pwrtelegram API.
 
+Thw @pwrtelegram bot API is an enhanced version of telegram's bot API that has all of the official telegram bot API features plus:  
+* Downloading of files up to 1.5 GB in size  
+* Anonymous file storage (the URL of downloaded files does not contain your bot's token)
+* Uploading of files up to 1.5 GB in size  
+* Uploading of files using an URL
+* Reuploading of files using a file ID and different file type or file name.
+* Uploading of any file/URL/file ID with automagical type recognition.  
+* Uploading of any file/URL/file ID without sending the file to a specific user.  
+* Automagical metadata recognition of sent files/URLs/file IDs.  
+* Deleting of text messages sent from the bot  
+* Uploading of files bigger than 5 megabytes with inline queries (supports both URLs and direct uploads)
+* Automatical type recognition for files sent using answerinlinequery 
+* Both webhooks and getupdates are supported.
+* webhook requests can be recieved even on insecure http servers.
+* It is open source (https://github.com/pwrtelegram)!
+* It can be installed on your own server (https://github.com/pwrtelegram/pwrtelegram-backend)!
+
+
 I am connected to the beta PWRTelegram API (beta.pwrtelegram.xyz), so sometimes I might spit out some weird errors or not work at all. That means @danogentili is busy debugging the API :)
 
-Try sending me files or the following commands, if you encounter some bugs send @danogentili a screenshot!
+
+If you send me a file, even a 1.5 gb one, I will download it, return the download URL along with some json and resend it to you.
 
 Available commands:
 • /start: Start bot and get this message.
 • /info: Get shorter info message about this bot.
-• /question: Start interactive chat.
-• /cancel: Cancel any currently running interactive chats.
-• /dl: Download file using file/id URL.
-Written by Drew (@topkecleon) and Daniil Gentili (@danogentili).
+• /dl: Download file using file/id URL (up to 1.5 gb).
+
+Written by Daniil Gentili (@danogentili).
 http://github.com/pwrtelegram/pwrtelegram-bot
+If you encounter bugs send @danogentili a screenshot!
 "
 			;;
 		'/cancel')
@@ -127,11 +164,11 @@ http://github.com/pwrtelegram/pwrtelegram-bot
 		'/dl')
 			send_message "${USER[ID]}" "Usage: /dl url filename";;
 		'/dl'*)
-			res=$(curl -s "$FILE_DL_URL" -F "chat_id=${USER[ID]}" -F "file=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/\s.*//g')" -F "name=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/.*\s//')" )
+			res=$(curl -s "$FILE_DL_URL" -F "chat_id=${USER[ID]}" -F "file=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/\s.*//g')" -F "name=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/[^ ]*\s//')")
 
 #			send_file "${USER[ID]}" $(echo "${MESSAGE}" | sed 's/^\/dl //g' | tr -d '\n')
 #			oldres="$res"
-			send_message "${USER[ID]}" "Result is $res, reforward the file to me to get the URL download link."
+			send_message "${USER[ID]}" "Result is $res, reforward the file to me to get the URL download link. "
 
 			;;
 		*)

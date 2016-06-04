@@ -1,0 +1,17 @@
+All of the official telegram bot API features plus:  
+* Downloading of files up to 1.5 GB in size  
+* Anonymous file storage (the URL of downloaded files does not contain your bot's token)
+* Uploading of files up to 1.5 GB in size  
+* Uploading of files using an URL
+* Reuploading of files using a file ID and different file type or file name.
+* Uploading of any file/URL/file ID with automagical type recognition.  
+* Uploading of any file/URL/file ID without sending the file to a specific user.  
+* Automagical metadata recognition of sent files/URLs/file IDs.  
+* Deleting of text messages sent from the bot  
+* Uploading of files bigger than 5 megabytes with inline queries (supports both URLs and direct uploads)
+* Automatical type recognition for files sent using answerinlinequery 
+* Both webhooks and getupdates are supported.
+* webhook requests can be recieved even on insecure http servers.
+* [It is open source](https://github.com/pwrtelegram)!
+* [It can be installed on your own server](https://github.com/pwrtelegram/pwrtelegram-backend)!
+
