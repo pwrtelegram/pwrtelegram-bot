@@ -16,16 +16,16 @@ else
 
 	if ! tmux ls | grep -v send | grep -q $copname; then
 		[ ! -z ${URLS[*]} ] && {
-			send_message "${USER[ID]}" "${URLS[*]}"
+			send_message "${CHAT[ID]}" "${URLS[*]}"
 
 
 #			curl -s ${URLS[*]} -o $NAME -L
-#			send_file "${USER[ID]}" $(echo "$NAME" | sed 's/\s*//g' | tr -d '\n')
-			send_file "${USER[ID]}" $(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')
-			send_message "${USER[ID]}" "Sending URL ($(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')) result is $res"
+#			send_file "${CHAT[ID]}" $(echo "$NAME" | sed 's/\s*//g' | tr -d '\n')
+			send_file "${CHAT[ID]}" $(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')
+			send_message "${CHAT[ID]}" "Sending URL ($(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')) result is $res"
 			rm "$NAME"
 		}
-		[ ! -z ${LOCATION[*]} ] && send_location "${USER[ID]}" "${LOCATION[LATITUDE]}" "${LOCATION[LONGITUDE]}"
+		[ ! -z ${LOCATION[*]} ] && send_location "${CHAT[ID]}" "${LOCATION[LATITUDE]}" "${LOCATION[LONGITUDE]}"
 
 		# Inline
                         # inline query data
@@ -119,10 +119,10 @@ http://github.com/pwrtelegram/pwrtelegram-bot"
 			startproc "./question"
 			;;
 		'/info')
-			send_message "${USER[ID]}" "This is bashbot, the Telegram bot written entirely in bash."
+			send_message "${CHAT[ID]}" "This is bashbot, the Telegram bot written entirely in bash."
 			;;
 		'/start')
-			send_message "${USER[ID]}" "This the official bot of the @pwrtelegram api.
+			send_message "${CHAT[ID]}" "This the official bot of the @pwrtelegram api.
 I am basically a testing platform for the @pwrtelegram API.
 
 Thw @pwrtelegram bot API is an enhanced version of telegram's bot API that has all of the official telegram bot API features plus:  
@@ -151,7 +151,7 @@ If you send me a file, even a 1.5 gb one, I will download it, return the downloa
 Available commands:
 • /start: Start bot and get this message.
 • /info: Get shorter info message about this bot.
-• /dl: Download file using file/id URL (up to 1.5 gb).
+• /dl: Download file using file id/ URL (up to 1.5 gb).
 
 Written by Daniil Gentili (@danogentili).
 http://github.com/pwrtelegram/pwrtelegram-bot
@@ -159,20 +159,23 @@ If you encounter bugs send @danogentili a screenshot!
 "
 			;;
 		'/cancel')
-			if tmux ls | grep -q $copname; then killproc && send_message "${USER[ID]}" "Command canceled.";else send_message "${USER[ID]}" "No command is currently running.";fi
+			if tmux ls | grep -q $copname; then killproc && send_message "${CHAT[ID]}" "Command canceled.";else send_message "${CHAT[ID]}" "No command is currently running.";fi
 			;;
 		'/dl')
-			send_message "${USER[ID]}" "Usage: /dl url filename";;
+			send_message "${CHAT[ID]}" "Usage: /dl url filename";;
 		'/dl'*)
-			res=$(curl -s "$FILE_DL_URL" -F "chat_id=${USER[ID]}" -F "file=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/\s.*//g')" -F "name=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/[^ ]*\s//')")
+			echo "$MESSAGE" | grep -q "mkv" && { send_message "${CHAT[ID]}" "This bot can't download mkv files."; return; };
+			send_message "${CHAT[ID]}" "The download was started. "
 
-#			send_file "${USER[ID]}" $(echo "${MESSAGE}" | sed 's/^\/dl //g' | tr -d '\n')
+			res=$(curl -s "$FILE_DL_URL" -F "chat_id=${CHAT[ID]}" -F "file=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/\s.*//g')" -F "name=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/[^ ]*\s//')")
+
+#			send_file "${CHAT[ID]}" $(echo "${MESSAGE}" | sed 's/^\/dl //g' | tr -d '\n')
 #			oldres="$res"
-			send_message "${USER[ID]}" "Result is $res, reforward the file to me to get the URL download link. "
+			send_message "${CHAT[ID]}" "Result is $res, reforward the file to me to get the URL download link. "
 
 			;;
 		*)
-			if tmux ls | grep -v send | grep -q $copname;then inproc; else send_message "${USER[ID]}" "$MESSAGE" "safe";fi
+			if tmux ls | grep -v send | grep -q $copname;then inproc; else send_message "${CHAT[ID]}" "$MESSAGE" "safe";fi
 			;;
 	esac
 fi

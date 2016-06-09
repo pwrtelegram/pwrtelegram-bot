@@ -7,27 +7,36 @@
 
 # Depends on JSON.sh (http://github.com/dominictarr/JSON.sh) (MIT/Apache),
 # and on tmux (http://github.com/tmux/tmux) (BSD).
-
 # This file is public domain in the USA and all free countries.
 # Elsewhere, consider it to be WTFPLv2. (wtfpl.net/txt/copying)
 
-cd $(dirname $PWD/$0)
-if [ ! -d JSON.sh ]; then
+if [ ! -f "JSON.sh/JSON.sh" ]; then
 	echo "You did not clone recursively! Downloading JSON.sh..."
 	git clone http://github.com/dominictarr/JSON.sh
 	echo "JSON.sh has been downloaded. Proceeding."
 fi
 
+if [ ! -f "token" ]; then
+	clear
+	echo -e '\e[0;31mTOKEN MISSING.\e[0m'
+	echo "PLEASE WRITE YOUR TOKEN HERE"
+	read token
+	echo "$token" >> token
+fi
+
 source commands.sh source
-URL='https://beta.pwrtelegram.xyz/bot'$TOKEN
+URL='https://api.pwrtelegram.xyz/bot'$TOKEN
 
 
 SCRIPT="$0"
 MSG_URL=$URL'/sendMessage'
+LEAVE_URL=$URL'/leaveChat'
+KICK_URL=$URL'/kickChatMember'
+UNBAN_URL=$URL'/unbanChatMember'
+FILE_DL_URL=$URL'/sendFile'
 PHO_URL=$URL'/sendPhoto'
 AUDIO_URL=$URL'/sendAudio'
 DOCUMENT_URL=$URL'/sendDocument'
-FILE_DL_URL=$URL'/sendFile'
 STICKER_URL=$URL'/sendSticker'
 VIDEO_URL=$URL'/sendVideo'
 VOICE_URL=$URL'/sendVoice'
@@ -35,7 +44,7 @@ LOCATION_URL=$URL'/sendLocation'
 VENUE_URL=$URL'/sendVenue'
 ACTION_URL=$URL'/sendChatAction'
 FORWARD_URL=$URL'/forwardMessage'
-INLINE_QUERY='https://beta.pwrtelegram.xyz/bot'$TOKEN'/answerInlineQuery'
+INLINE_QUERY=$URL'/answerInlineQuery'
 ME_URL=$URL'/getMe'
 ME=$(curl -s $ME_URL | ./JSON.sh/JSON.sh -s | egrep '\["result","username"\]' | cut -f 2 | cut -d '"' -f 2)
 
@@ -44,7 +53,12 @@ FILE_URL='https://storage.pwrtelegram.xyz/'
 UPD_URL=$URL'/getUpdates?offset='
 GET_URL=$URL'/getFile'
 OFFSET=0
-declare -A USER MESSAGE URLS CONTACT LOCATION
+declare -A USER MESSAGE URLS CONTACT LOCATION CHAT
+
+urlencode() {
+	echo "$*" | sed 's:%:%25:g;s: :%20:g;s:<:%3C:g;s:>:%3E:g;s:#:%23:g;s:{:%7B:g;s:}:%7D:g;s:|:%7C:g;s:\\:%5C:g;s:\^:%5E:g;s:~:%7E:g;s:\[:%5B:g;s:\]:%5D:g;s:`:%60:g;s:;:%3B:g;s:/:%2F:g;s:?:%3F:g;s^:^%3A^g;s:@:%40:g;s:=:%3D:g;s:&:%26:g;s:\$:%24:g;s:\!:%21:g;s:\*:%2A:g'
+}
+
 
 send_message() {
 	[ "$2" = "" ] && return 1
@@ -96,17 +110,29 @@ send_text() {
 			send_markdown_message "$1" "${2//markdown_parse_mode}"
 			;;
 		*)
-			res=$(curl -s "$MSG_URL" -d "chat_id=$1" -d "text=$2")
+			res=$(curl -s "$MSG_URL" -d "chat_id=$1" -d "text=$(urlencode "$2")")
 			;;
 	esac
 }
 
 send_markdown_message() {
-	res=$(curl -s "$MSG_URL" -d "chat_id=$1" -d "text=$2" -d "parse_mode=markdown")
+	res=$(curl -s "$MSG_URL" -d "chat_id=$1" -d "text=$(urlencode "$2")" -d "parse_mode=markdown" -d "disable_web_page_preview=true")
 }
 
 send_html_message() {
-	res=$(curl -s "$MSG_URL" -F "chat_id=$1" -F "text=$2" -F "parse_mode=html")
+	res=$(curl -s "$MSG_URL" -F "chat_id=$1" -F "text=$(urlencode "$2")" -F "parse_mode=html")
+}
+
+kick_chat_member() {
+	res=$(curl -s "$KICK_URL" -F "chat_id=$1" -F "user_id=$2")
+}
+
+unban_chat_member() {
+	res=$(curl -s "$UNBAN_URL" -F "chat_id=$1" -F "user_id=$2")
+}
+
+leave_chat() {
+	res=$(curl -s "$LEAVE_URL" -F "chat_id=$1")
 }
 
 answer_inline_query() {
@@ -173,7 +199,9 @@ answer_inline_query() {
 		;;
 
 	esac
+
 	res=$(curl -s "$INLINE_QUERY" -F "inline_query_id=$1" -F "results=$InlineQueryResult")
+
 }
 
 send_keyboard() {
@@ -191,28 +219,31 @@ send_keyboard() {
 
 get_file() {
 	[ "$1" == "" ] && return
-	jsonres=$(curl -s "$GET_URL" -F "file_id=$1"  -F "store_on_pwrtelegram=true")
-	send_message "${USER[ID]}" "$jsonres"
-	res=$(echo "$jsonres" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)
+	jsonres=$(curl -s "$GET_URL" -F "file_id=$1")
+	send_message "${CHAT[ID]}" "$jsonres"
+	res="$(echo "$jsonres" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)"
 	[ "$res" != "" ] && echo $FILE_URL$res
+
 }
 
 send_file() {
-	[ "$2" = "" ] && res=empty && return
+	[ "$2" = "" ] && return
 	local chat_id=$1
 	local file=$2
 	echo "$file" | grep -qE $FILE_REGEX || return
 	local ext="${file##*.}"
 	case $ext in
-        	"mp3")
+        	mp3|flac)
 			CUR_URL=$AUDIO_URL
 			WHAT=audio
 			STATUS=upload_audio
+			local CAPTION="$3"
 			;;
 		png|jpg|jpeg|gif)
 			CUR_URL=$PHO_URL
 			WHAT=photo
 			STATUS=upload_photo
+			local CAPTION="$3"
 			;;
 		webp)
 			CUR_URL=$STICKER_URL
@@ -223,6 +254,7 @@ send_file() {
 			CUR_URL=$VIDEO_URL
 			WHAT=video
 			STATUS=upload_video
+			local CAPTION="$3"
 			;;
 
 		ogg)
@@ -234,10 +266,11 @@ send_file() {
 			CUR_URL=$DOCUMENT_URL
 			WHAT=document
 			STATUS=upload_document
+			local CAPTION="$3"
 			;;
 	esac
 	send_action $chat_id $STATUS
-	res=$(curl -s "$FILE_DL_URL" -F "chat_id=$chat_id" -F "file=$file" -F "caption=$3")
+	res=$(curl -s "$FILE_DL_URL" -F "chat_id=$chat_id" -F "file=$file")
 }
 
 # typing for text messages, upload_photo for photos, record_video or upload_video for videos, record_audio or upload_audio for audio files, upload_document for general files, find_location for location
@@ -268,7 +301,7 @@ startproc() {
 	killproc
 	mkfifo /tmp/$copname
 	TMUX= tmux new-session -d -s $copname "$* &>/tmp/$copname; echo imprettydarnsuredatdisisdaendofdacmd>/tmp/$copname"
-	TMUX= tmux new-session -d -s sendprocess_$copname "bash $SCRIPT outproc ${USER[ID]} $copname"
+	TMUX= tmux new-session -d -s sendprocess_$copname "bash $SCRIPT outproc ${CHAT[ID]} $copname"
 }
 
 killproc() {
@@ -282,13 +315,20 @@ inproc() {
 
 process_client() {
 	# Message
-	MESSAGE=$(echo "$res" | egrep '\["result",0,"message","text"\]' | cut -f 2 | cut -d '"' -f 2)
+	MESSAGE=$(printf "$(echo "$res" | egrep '\["result",0,"message","text"\]' | cut -f 2 | cut -d '"' -f 2)")
+	MESSAGE_ID=$(echo "$res" | egrep '\["result",0,"message","message_id"\]' | cut -f 2 | cut -d '"' -f 2)
+	# Chat
+	CHAT[ID]=$(echo "$res" | egrep '\["result",0,"message","chat","id"\]' | cut -f 2)
+	CHAT[FIRST_NAME]=$(echo "$res" | egrep '\["result",0,"message","chat","first_name"\]' | cut -f 2 | cut -d '"' -f 2)
+	CHAT[LAST_NAME]=$(echo "$res" | egrep '\["result",0,"message","chat","last_name"\]' | cut -f 2 | cut -d '"' -f 2)
+	CHAT[USERNAME]=$(echo "$res" | egrep '\["result",0,"message","chat","username"\]' | cut -f 2 | cut -d '"' -f 2)
+	CHAT[TITLE]=$(echo "$res" | egrep '\["result",0,"message","chat","title"\]' | cut -f 2 | cut -d '"' -f 2)
 
 	# User
-	USER[ID]=$(echo "$res" | egrep '\["result",0,"message","chat","id"\]' | cut -f 2)
-	USER[FIRST_NAME]=$(echo "$res" | egrep '\["result",0,"message","chat","first_name"\]' | cut -f 2 | cut -d '"' -f 2)
-	USER[LAST_NAME]=$(echo "$res" | egrep '\["result",0,"message","chat","last_name"\]' | cut -f 2 | cut -d '"' -f 2)
-	USER[USERNAME]=$(echo "$res" | egrep '\["result",0,"message","chat","username"\]' | cut -f 2 | cut -d '"' -f 2)
+	USER[ID]=$(echo "$res" | egrep '\["result",0,"message","from","id"\]' | cut -f 2)
+	USER[FIRST_NAME]=$(echo "$res" | egrep '\["result",0,"message","from","first_name"\]' | cut -f 2 | cut -d '"' -f 2)
+	USER[LAST_NAME]=$(echo "$res" | egrep '\["result",0,"message","from","last_name"\]' | cut -f 2 | cut -d '"' -f 2)
+	USER[USERNAME]=$(echo "$res" | egrep '\["result",0,"message","from","username"\]' | cut -f 2 | cut -d '"' -f 2)
 
 	# Audio
 	URLS[AUDIO]=$(get_file $(echo "$res" | egrep '\["result",0,"message","audio","file_id"\]' | cut -f 2 | cut -d '"' -f 2))
@@ -315,14 +355,14 @@ process_client() {
 	# Location
 	LOCATION[LONGITUDE]=$(echo "$res" | egrep '\["result",0,"message","location","longitude"\]' | cut -f 2 | cut -d '"' -f 2)
 	LOCATION[LATITUDE]=$(echo "$res" | egrep '\["result",0,"message","location","latitude"\]' | cut -f 2 | cut -d '"' -f 2)
-	NAME=$(echo ${URLS[*]} | sed 's/.*\///g')
+	NAME="$(echo ${URLS[*]} | sed 's/.*\///g')"
 
 	# Tmux
-	copname="$ME"_"${USER[ID]}"
+	copname="$ME"_"${CHAT[ID]}"
 
 	source commands.sh
 
-	tmpcount="COUNT${USER[ID]}"
+	tmpcount="COUNT${CHAT[ID]}"
 	cat count | grep -q "$tmpcount" || echo "$tmpcount">>count
 	# To get user count execute bash bashbot.sh count
 }
@@ -331,13 +371,19 @@ process_client() {
 while [ "$1" == "startbot" ]; do {
 
 	res=$(curl -s $UPD_URL$OFFSET | ./JSON.sh/JSON.sh -s)
+
 	# Offset
 	OFFSET=$(echo "$res" | egrep '\["result",0,"update_id"\]' | cut -f 2)
 	OFFSET=$((OFFSET+1))
 
 	if [ $OFFSET != 1 ]; then
-		process_client&
+		if [ "$2" == "test" ]; then
+			process_client
+		else
+			process_client&
+		fi
 	fi
+
 }; done
 
 
@@ -360,20 +406,28 @@ case "$1" in
 		for f in $(cat count);do send_message ${f//COUNT} "$*"; $sleep;done
 		;;
 	"start")
+		clear
 		tmux kill-session -t $ME&>/dev/null
-		tmux new-session -d -s $ME "bash $SCRIPT startbot" && echo "Bot started successfully. Tmux session name is $ME" || echo "An error occurred while starting the bot."
+		tmux new-session -d -s $ME "bash $SCRIPT startbot" && echo -e '\e[0;32mBot started successfully.\e[0m'
+		echo "Tmux session name $ME" || echo -e '\e[0;31mAn error occurred while starting the bot. \e[0m'
+		send_markdown_message "${CHAT[ID]}" "*Bot started*"
 		;;
 	"kill")
+		clear
 		tmux kill-session -t $ME &>/dev/null
-		echo "Bot was killed successfully. "
+		send_markdown_message "${CHAT[ID]}" "*Bot stopped*"
+		echo -e '\e[0;32mOK. Bot stopped successfully.\e[0m'
 		;;
 	"help")
+		clear
 		less README.md
 		;;
 	"attach")
 		tmux attach -t $ME
 		;;
 	*)
-		echo "Available arguments: outproc, count, broadcast, start, kill, help, attach"
+		echo -e '\e[0;31mBAD REQUEST\e[0m'
+		echo -e '\e[0;31mAvailable arguments: outproc, count, broadcast, start, kill, help, attach\e[0m'
 		;;
 esac
+
