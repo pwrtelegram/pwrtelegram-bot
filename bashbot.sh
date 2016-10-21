@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # bashbot, the Telegram bot written in bash.
 # Written by Drew (@topkecleon) and Daniil Gentili (@danogentili).
 # Also contributed: JuanPotato, BigNerd95, TiagoDanin, iicc1.
@@ -219,8 +218,10 @@ send_keyboard() {
 
 get_file() {
 	[ "$1" == "" ] && return
-	jsonres=$(curl -s "$GET_URL" -F "file_id=$1")
-	send_message "${CHAT[ID]}" "$jsonres"
+	jsonres='{"ok":true,"error_code":202,"'
+	while echo "$jsonres" | grep -q '{"ok":true,"error_code":202,"';do
+		jsonres=$(curl -s "$GET_URL" -F "file_id=$1")
+	done
 	res="$(echo "$jsonres" | ./JSON.sh/JSON.sh -s | egrep '\["result","file_path"\]' | cut -f 2 | cut -d '"' -f 2)"
 	[ "$res" != "" ] && echo $FILE_URL$res
 
@@ -370,7 +371,7 @@ process_client() {
 # source the script with source as param to use functions in other scripts
 while [ "$1" == "startbot" ]; do {
 
-	res=$(curl -s $UPD_URL$OFFSET | ./JSON.sh/JSON.sh -s)
+	res=$(curl -s "$UPD_URL$OFFSET&timeout=1" | ./JSON.sh/JSON.sh -s)
 
 	# Offset
 	OFFSET=$(echo "$res" | egrep '\["result",0,"update_id"\]' | cut -f 2)

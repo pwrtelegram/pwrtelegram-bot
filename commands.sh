@@ -13,17 +13,12 @@ if [ "$1" = "source" ];then
 	# Set to .* to allow sending files from all locations
 	FILE_REGEX='.*'
 else
-
+{
 	if ! tmux ls | grep -v send | grep -q $copname; then
 		[ ! -z ${URLS[*]} ] && {
-			send_message "${CHAT[ID]}" "${URLS[*]}"
-
-
-#			curl -s ${URLS[*]} -o $NAME -L
-#			send_file "${CHAT[ID]}" $(echo "$NAME" | sed 's/\s*//g' | tr -d '\n')
-			send_file "${CHAT[ID]}" $(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')
-			send_message "${CHAT[ID]}" "Sending URL ($(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')) result is $res"
-			rm "$NAME"
+#			send_file "${CHAT[ID]}" $(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n')
+#			send_message "${CHAT[ID]}" "Downloading file..."
+			send_message "${CHAT[ID]}" "$(echo "${URLS[*]}" | sed 's/\s*//g' | tr -d '\n') "
 		}
 		[ ! -z ${LOCATION[*]} ] && send_location "${CHAT[ID]}" "${LOCATION[LATITUDE]}" "${LOCATION[LONGITUDE]}"
 
@@ -56,8 +51,7 @@ else
 			fi
 
 			if [[ $iQUERY_MSG == zip ]]; then
-				answer_inline_query "$iQUERY_ID" "document" "1GB zip file" "1GB zip file" "https://storage.pwrtelegram.xyz/pwrtelegrambot/document/download_604040884794687598.zip"
-#"BQADBAADbgAD_PthCPK954yXfJEDAg"
+				answer_inline_query "$iQUERY_ID" "document" "1GB zip file" "1GB zip file" "BQADBAADbgAD_PthCPK954yXfJEDAg"
 				return
 			fi
 			if [[ $iQUERY_MSG == bot ]]; then
@@ -67,8 +61,7 @@ else
 				return
 			fi
 			if [[ $iQUERY_MSG == 10 ]]; then
-				answer_inline_query "$iQUERY_ID" "document" "yay" "yay" "http://speedtest.ftp.otenet.gr/files/test10Mb.db"
-#"BQADBAADbgAD_PthCPK954yXfJEDAg"
+				answer_inline_query "$iQUERY_ID" "document" "yay" "yay" "BQADBAADbgAD_PthCPK954yXfJEDAg"
 				return
 			fi
 			if [[ $iQUERY_MSG == web ]]; then
@@ -77,7 +70,6 @@ else
 			fi
                         if [ ! -z "$iQUERY_ID" ]; then
                                 answer_inline_query "$iQUERY_ID" "article" "Info message" "This the official bot of the @pwrtelegram api.
-I am basically a testing platform for the @pwrtelegram API.
 
 The @pwrtelegram bot API is an enhanced version of telegram's bot API that has all of the official telegram bot API features plus:  
 * Downloading of files up to 1.5 GB in size  
@@ -114,6 +106,7 @@ http://github.com/pwrtelegram/pwrtelegram-bot"
                         fi
 		fi
 	fi
+} &
 	case $MESSAGE in
 		'/question')
 			startproc "./question"
@@ -121,11 +114,11 @@ http://github.com/pwrtelegram/pwrtelegram-bot"
 		'/info')
 			send_message "${CHAT[ID]}" "This is bashbot, the Telegram bot written entirely in bash."
 			;;
-		'/start')
+		'/start'*)
 			send_message "${CHAT[ID]}" "This the official bot of the @pwrtelegram api.
 I am basically a testing platform for the @pwrtelegram API.
 
-Thw @pwrtelegram bot API is an enhanced version of telegram's bot API that has all of the official telegram bot API features plus:  
+The @pwrtelegram bot API is an enhanced version of telegram's bot API that has all of the official telegram bot API features plus:  
 * Downloading of files up to 1.5 GB in size  
 * Anonymous file storage (the URL of downloaded files does not contain your bot's token)
 * Uploading of files up to 1.5 GB in size  
@@ -141,10 +134,6 @@ Thw @pwrtelegram bot API is an enhanced version of telegram's bot API that has a
 * webhook requests can be recieved even on insecure http servers.
 * It is open source (https://github.com/pwrtelegram)!
 * It can be installed on your own server (https://github.com/pwrtelegram/pwrtelegram-backend)!
-
-
-I am connected to the beta PWRTelegram API (beta.pwrtelegram.xyz), so sometimes I might spit out some weird errors or not work at all. That means @danogentili is busy debugging the API :)
-
 
 If you send me a file, even a 1.5 gb one, I will download it, return the download URL along with some json and resend it to you.
 
@@ -164,18 +153,14 @@ If you encounter bugs send @danogentili a screenshot!
 		'/dl')
 			send_message "${CHAT[ID]}" "Usage: /dl url filename";;
 		'/dl'*)
-			echo "$MESSAGE" | grep -q "mkv" && { send_message "${CHAT[ID]}" "This bot can't download mkv files."; return; };
-			send_message "${CHAT[ID]}" "The download was started. "
+			echo "$MESSAGE" | grep -q "mkv" && { send_message "${CHAT[ID]}" "This bot can't download mkv files to reduce piracy."; return; };
+			send_message "${CHAT[ID]}" "The download was started. Send me the file you receive to get a download link."
 
 			res=$(curl -s "$FILE_DL_URL" -F "chat_id=${CHAT[ID]}" -F "file=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/\s.*//g')" -F "name=$(echo "$MESSAGE" | sed 's/^\/dl //g;s/[^ ]*\s//')")
 
-#			send_file "${CHAT[ID]}" $(echo "${MESSAGE}" | sed 's/^\/dl //g' | tr -d '\n')
-#			oldres="$res"
-			send_message "${CHAT[ID]}" "Result is $res, reforward the file to me to get the URL download link. "
-
 			;;
 		*)
-			if tmux ls | grep -v send | grep -q $copname;then inproc; else send_message "${CHAT[ID]}" "$MESSAGE" "safe";fi
+			if tmux ls | grep -v send | grep -q $copname;then inproc;fi
 			;;
 	esac
 fi
